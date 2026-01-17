@@ -22,9 +22,7 @@ namespace DTOs.Entities
         public DateTime? SubmittedAt { get; set; }
         public int DurationSeconds { get; set; }
 
-        public string Status { get; set; } = "Assigned"; // Assigned, Submitted, Approved, Rejected
-
-        // Navigation
+        public string Status { get; set; } = "Assigned"; 
         public virtual ICollection<Annotation> Annotations { get; set; } = new List<Annotation>();
         public virtual ICollection<ReviewLog> ReviewLogs { get; set; } = new List<ReviewLog>();
     }
