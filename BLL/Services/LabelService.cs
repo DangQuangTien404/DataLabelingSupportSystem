@@ -31,7 +31,7 @@ namespace BLL.Services
             await _labelRepo.AddAsync(label);
             await _labelRepo.SaveChangesAsync();
 
-            return new LabelResponse { Id = label.Id, Name = label.Name, Color = label.Color };
+            return new LabelResponse { Id = label.Id, Name = label.Name, Color = label.Color, GuideLine = label.GuideLine };
         }
 
         public async Task<LabelResponse> UpdateLabelAsync(int labelId, UpdateLabelRequest request)
@@ -46,7 +46,7 @@ namespace BLL.Services
             _labelRepo.Update(label);
             await _labelRepo.SaveChangesAsync();
 
-            return new LabelResponse { Id = label.Id, Name = label.Name, Color = label.Color };
+            return new LabelResponse { Id = label.Id, Name = label.Name, Color = label.Color, GuideLine = label.GuideLine };
         }
 
         public async Task DeleteLabelAsync(int labelId)

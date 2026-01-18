@@ -17,5 +17,9 @@ namespace BLL.Interfaces
 
         Task UpdateProjectAsync(int projectId, UpdateProjectRequest request);
         Task DeleteProjectAsync(int projectId);
+
+        Task<List<DataItemResponse>> GetDataItemsAsync(int projectId, int page, int pageSize);
+        Task<List<ExportDataItemDto>> ExportProjectDataAsync(int projectId);
+        Task DeleteDataItemAsync(int dataItemId, string managerId);
     }
 }

@@ -17,6 +17,8 @@ namespace DTOs.Entities
         [Required]
         public string Name { get; set; } = string.Empty;
 
+        public string? Description { get; set; }
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal PricePerLabel { get; set; }
 

@@ -155,5 +155,51 @@ namespace API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("{id}/data-items")]
+        public async Task<IActionResult> GetDataItems(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var items = await _projectService.GetDataItemsAsync(id, page, pageSize);
+                return Ok(items);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id}/export")]
+        public async Task<IActionResult> ExportData(int id)
+        {
+            try
+            {
+                var data = await _projectService.ExportProjectDataAsync(id);
+                var jsonBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(data);
+                return File(jsonBytes, "application/json", $"project-{id}-export.json");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpDelete("data-items/{dataItemId}")]
+        public async Task<IActionResult> DeleteDataItem(int dataItemId)
+        {
+            try
+            {
+                var managerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(managerId)) return Unauthorized();
+
+                await _projectService.DeleteDataItemAsync(dataItemId, managerId);
+                return Ok(new { Message = "Data item deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

@@ -8,5 +8,8 @@ namespace DAL.Interfaces
         Task<List<Project>> GetProjectsByManagerIdAsync(string managerId);
 
         Task<List<Project>> GetProjectsByAnnotatorAsync(string annotatorId);
+
+        Task<List<DataItem>> GetProjectDataItemsAsync(int projectId, int page, int pageSize);
+        Task<List<DataItem>> GetProjectExportDataAsync(int projectId);
     }
 }

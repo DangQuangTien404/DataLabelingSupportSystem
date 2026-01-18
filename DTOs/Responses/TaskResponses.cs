@@ -6,6 +6,7 @@
         public int DataItemId { get; set; }
         public string StorageUrl { get; set; } = string.Empty;
         public string ProjectName { get; set; } = string.Empty;
+        public string? ProjectGuidelines { get; set; }
         public string Status { get; set; } = string.Empty;
         public string? RejectReason { get; set; }
 

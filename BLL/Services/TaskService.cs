@@ -84,6 +84,7 @@ namespace BLL.Services
                 DataItemId = assignment.DataItemId,
                 StorageUrl = assignment.DataItem?.StorageUrl ?? "",
                 ProjectName = assignment.Project?.Name ?? "",
+                ProjectGuidelines = assignment.Project?.Description,
                 Status = assignment.Status,
                 RejectReason = rejectReason,
 
@@ -91,7 +92,8 @@ namespace BLL.Services
                 {
                     Id = l.Id,
                     Name = l.Name,
-                    Color = l.Color
+                    Color = l.Color,
+                    GuideLine = l.GuideLine
                 }).ToList() ?? new List<LabelResponse>(),
 
                 ExistingAnnotations = assignment.Annotations.Select(an => new

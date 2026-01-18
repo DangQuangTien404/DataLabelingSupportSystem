@@ -11,11 +11,13 @@ namespace BLL.Services
     {
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IRepository<DataItem> _dataItemRepository;
 
-        public ProjectService(IProjectRepository projectRepository, IUserRepository userRepository)
+        public ProjectService(IProjectRepository projectRepository, IUserRepository userRepository, IRepository<DataItem> dataItemRepository)
         {
             _projectRepository = projectRepository;
             _userRepository = userRepository;
+            _dataItemRepository = dataItemRepository;
         }
         public async Task<ProjectDetailResponse> CreateProjectAsync(string managerId, CreateProjectRequest request)
         {
@@ -29,6 +31,7 @@ namespace BLL.Services
             {
                 ManagerId = managerId,
                 Name = request.Name,
+                Description = request.Description,
                 PricePerLabel = request.PricePerLabel,
                 TotalBudget = request.TotalBudget,
                 Deadline = request.Deadline,
@@ -40,13 +43,14 @@ namespace BLL.Services
             {
                 Id = project.Id,
                 Name = project.Name,
+                Description = project.Description,
                 PricePerLabel = project.PricePerLabel,
                 TotalBudget = project.TotalBudget,
                 Deadline = project.Deadline,
                 ManagerId = project.ManagerId,
                 ManagerName = manager.FullName, 
                 ManagerEmail = manager.Email,
-                Labels = new List<string>(),   
+                Labels = new List<LabelResponse>(),
                 TotalDataItems = 0,            
                 ProcessedItems = 0
             };
@@ -95,13 +99,20 @@ namespace BLL.Services
             {
                 Id = project.Id,
                 Name = project.Name,
+                Description = project.Description,
                 PricePerLabel = project.PricePerLabel,
                 TotalBudget = project.TotalBudget,
                 Deadline = project.Deadline,
                 ManagerId = project.ManagerId,
                 ManagerName = project.Manager?.FullName ?? "Unknown",
                 ManagerEmail = project.Manager?.Email ?? "",
-                Labels = project.LabelClasses.Select(l => l.Name).ToList(),
+                Labels = project.LabelClasses.Select(l => new LabelResponse
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    Color = l.Color,
+                    GuideLine = l.GuideLine
+                }).ToList(),
                 TotalDataItems = project.DataItems.Count,
                 ProcessedItems = project.DataItems.Count(d => d.Status == "Done")
             };
@@ -130,6 +141,7 @@ namespace BLL.Services
             if (project == null) throw new Exception("Project not found");
 
             project.Name = request.Name;
+            project.Description = request.Description;
             project.PricePerLabel = request.PricePerLabel;
             project.TotalBudget = request.TotalBudget;
             project.Deadline = request.Deadline;
@@ -145,6 +157,51 @@ namespace BLL.Services
 
             _projectRepository.Delete(project);
             await _projectRepository.SaveChangesAsync();
+        }
+
+        public async Task<List<DataItemResponse>> GetDataItemsAsync(int projectId, int page, int pageSize)
+        {
+            var items = await _projectRepository.GetProjectDataItemsAsync(projectId, page, pageSize);
+            return items.Select(i => new DataItemResponse
+            {
+                Id = i.Id,
+                StorageUrl = i.StorageUrl,
+                Status = i.Status,
+                MetaData = i.MetaData
+            }).ToList();
+        }
+
+        public async Task<List<ExportDataItemDto>> ExportProjectDataAsync(int projectId)
+        {
+            var dataItems = await _projectRepository.GetProjectExportDataAsync(projectId);
+
+            return dataItems.Select(d => new ExportDataItemDto
+            {
+                Id = d.Id,
+                StorageUrl = d.StorageUrl,
+                MetaData = d.MetaData,
+                Annotations = d.Assignments
+                    .Where(a => a.Status == "Completed")
+                    .SelectMany(a => a.Annotations)
+                    .Select(an => new ExportAnnotationDto
+                    {
+                        Label = an.LabelClass.Name,
+                        Value = an.Value
+                    }).ToList()
+            }).ToList();
+        }
+
+        public async Task DeleteDataItemAsync(int dataItemId, string managerId)
+        {
+            var item = await _dataItemRepository.GetByIdAsync(dataItemId);
+            if (item == null) throw new Exception("Data item not found");
+
+            var project = await _projectRepository.GetByIdAsync(item.ProjectId);
+            if (project == null || project.ManagerId != managerId)
+                throw new Exception("Unauthorized to delete this item.");
+
+            _dataItemRepository.Delete(item);
+            await _dataItemRepository.SaveChangesAsync();
         }
     }
 }

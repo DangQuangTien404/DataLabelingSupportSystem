@@ -36,5 +36,26 @@ namespace DAL.Repositories
                 .OrderByDescending(p => p.Id)
                 .ToListAsync();
         }
+
+        public async Task<List<DataItem>> GetProjectDataItemsAsync(int projectId, int page, int pageSize)
+        {
+            return await _context.DataItems
+                .Where(d => d.ProjectId == projectId)
+                .OrderBy(d => d.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        public async Task<List<DataItem>> GetProjectExportDataAsync(int projectId)
+        {
+            // Get DataItems that are Done, include Assignments and Annotations
+            return await _context.DataItems
+                .Where(d => d.ProjectId == projectId && d.Status == "Done")
+                .Include(d => d.Assignments)
+                .ThenInclude(a => a.Annotations)
+                .ThenInclude(an => an.LabelClass)
+                .ToListAsync();
+        }
     }
 }
