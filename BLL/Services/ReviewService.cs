@@ -28,17 +28,14 @@ namespace BLL.Services
             _statsRepo = statsRepo;
             _projectRepo = projectRepo;
         }
-
         public async Task ReviewAssignmentAsync(string reviewerId, ReviewRequest request)
         {
             var assignment = await _assignmentRepo.GetByIdAsync(request.AssignmentId);
             if (assignment == null) throw new Exception("Assignment not found");
-
             if (assignment.Status != "Submitted")
                 throw new Exception("This task is not ready for review.");
             var project = await _projectRepo.GetByIdAsync(assignment.ProjectId);
             if (project == null) throw new Exception("Project info not found");
-
             var allStats = await _statsRepo.GetAllAsync();
             var stats = allStats.FirstOrDefault(s => s.UserId == assignment.AnnotatorId && s.ProjectId == assignment.ProjectId);
 
@@ -49,11 +46,11 @@ namespace BLL.Services
                     UserId = assignment.AnnotatorId,
                     ProjectId = assignment.ProjectId,
                     TotalAssigned = 0,
-                    EfficiencyScore = 100
+                    EfficiencyScore = 100,
+                    EstimatedEarnings = 0
                 };
                 await _statsRepo.AddAsync(stats);
             }
-
             var log = new ReviewLog
             {
                 AssignmentId = assignment.Id,
@@ -64,13 +61,11 @@ namespace BLL.Services
                 CreatedAt = DateTime.UtcNow
             };
             await _reviewLogRepo.AddAsync(log);
-
             if (request.IsApproved)
             {
                 assignment.Status = "Completed";
                 stats.TotalApproved++;
                 stats.EstimatedEarnings = stats.TotalApproved * project.PricePerLabel;
-
                 if (assignment.DataItemId > 0)
                 {
                     var dataItem = await _dataItemRepo.GetByIdAsync(assignment.DataItemId);
@@ -90,8 +85,10 @@ namespace BLL.Services
             {
                 stats.EfficiencyScore = ((float)stats.TotalApproved / stats.TotalAssigned) * 100;
             }
+            stats.Date = DateTime.UtcNow;
             _statsRepo.Update(stats);
             _assignmentRepo.Update(assignment);
+
             await _assignmentRepo.SaveChangesAsync();
         }
 
