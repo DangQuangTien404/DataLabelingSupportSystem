@@ -1,4 +1,4 @@
-﻿using System.Text;
+﻿using API;
 using BLL.Interfaces;
 using BLL.Services;
 using DAL;
@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,7 +101,14 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    await API.DataSeeder.SeedUsersAsync(scope.ServiceProvider);
+    var services = scope.ServiceProvider;
+    try
+    {
+        await DataSeeder.SeedData(services);
+    }
+    catch (Exception ex)
+    {
+    }
 }
 
 if (app.Environment.IsDevelopment())
