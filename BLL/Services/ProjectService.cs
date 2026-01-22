@@ -116,7 +116,6 @@ namespace BLL.Services
             _projectRepository.Update(project);
             await _projectRepository.SaveChangesAsync();
         }
-
         public async Task<ProjectDetailResponse?> GetProjectDetailsAsync(int projectId)
         {
             var project = await _projectRepository.GetProjectWithDetailsAsync(projectId);
@@ -168,7 +167,6 @@ namespace BLL.Services
                 Members = members
             };
         }
-
         public async Task<List<ProjectSummaryResponse>> GetProjectsByManagerAsync(string managerId)
         {
             var projects = await _projectRepository.GetProjectsByManagerIdAsync(managerId);
