@@ -6,10 +6,10 @@ namespace BLL.Interfaces
     public interface IProjectService
     {
         Task<ProjectDetailResponse> CreateProjectAsync(string managerId, CreateProjectRequest request);
-        Task<List<ProjectSummaryResponse>> GetAssignedProjectsAsync(string annotatorId);
+        Task<List<AnnotatorProjectStatsResponse>> GetAssignedProjectsAsync(string annotatorId);
         Task ImportDataItemsAsync(int projectId, List<string> storageUrls);
         Task<ProjectDetailResponse?> GetProjectDetailsAsync(int projectId);
-
+        Task<ManagerStatsResponse> GetManagerStatsAsync(string managerId);
         Task<List<ProjectSummaryResponse>> GetProjectsByManagerAsync(string managerId);
         Task UpdateProjectAsync(int projectId, UpdateProjectRequest request);
         Task DeleteProjectAsync(int projectId);

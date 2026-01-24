@@ -1,5 +1,6 @@
 ﻿using BLL.Interfaces;
 using DAL.Interfaces;
+using DAL.Repositories;
 using DTOs.Entities;
 using DTOs.Requests;
 using DTOs.Responses;
@@ -55,17 +56,20 @@ namespace BLL.Services
                 {
                     UserId = request.AnnotatorId,
                     ProjectId = request.ProjectId,
-                    TotalAssigned = 0,
+                    TotalAssigned = dataItems.Count,
                     EfficiencyScore = 100,
                     EstimatedEarnings = 0,
                     Date = DateTime.UtcNow
                 };
                 await _statsRepo.AddAsync(stats);
             }
+            else
+            {
+                stats.TotalAssigned += dataItems.Count;
+                stats.Date = DateTime.UtcNow;
+                _statsRepo.Update(stats);
+            }
 
-            stats.TotalAssigned += dataItems.Count;
-            stats.Date = DateTime.UtcNow;
-            _statsRepo.Update(stats);
             await _assignmentRepo.SaveChangesAsync();
         }
 
@@ -78,11 +82,12 @@ namespace BLL.Services
                 AssignmentId = a.Id,
                 DataItemId = a.DataItemId,
                 StorageUrl = a.DataItem?.StorageUrl ?? "",
+                ProjectName = a.Project?.Name ?? "",
                 Status = a.Status,
                 RejectReason = (a.Status == "Rejected")
                     ? a.ReviewLogs.OrderByDescending(r => r.CreatedAt).FirstOrDefault()?.Comment
                     : null,
-                Deadline = a.Project.Deadline
+                Deadline = a.Project?.Deadline ?? DateTime.MinValue
             }).ToList();
         }
 
@@ -115,7 +120,7 @@ namespace BLL.Services
                 ProjectName = assignment.Project?.Name ?? "",
                 Status = assignment.Status,
                 RejectReason = rejectReason,
-
+                Deadline = assignment.Project?.Deadline ?? DateTime.MinValue,
                 Labels = assignment.Project?.LabelClasses.Select(l => new LabelResponse
                 {
                     Id = l.Id,
@@ -135,7 +140,34 @@ namespace BLL.Services
         {
             return await _assignmentRepo.GetAnnotatorStatsAsync(annotatorId);
         }
-
+        public async Task SaveDraftAsync(string userId, SubmitAnnotationRequest request)
+        {
+            var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(request.AssignmentId);
+            if (assignment == null) throw new Exception("Task not found");
+            if (assignment.AnnotatorId != userId) throw new Exception("Unauthorized");
+            assignment.Status = "InProgress";
+            if (assignment.Annotations != null && assignment.Annotations.Any())
+            {
+                foreach (var oldAnno in assignment.Annotations)
+                {
+                    _annotationRepo.Delete(oldAnno);
+                }
+            }
+            if (request.Annotations != null)
+            {
+                foreach (var item in request.Annotations)
+                {
+                    await _annotationRepo.AddAsync(new Annotation
+                    {
+                        AssignmentId = assignment.Id,
+                        ClassId = item.LabelClassId,
+                        Value = item.ValueJson
+                    });
+                }
+            }
+            _assignmentRepo.Update(assignment);
+            await _assignmentRepo.SaveChangesAsync();
+        }
         public async Task SubmitTaskAsync(string annotatorId, SubmitAnnotationRequest request)
         {
             var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(request.AssignmentId);

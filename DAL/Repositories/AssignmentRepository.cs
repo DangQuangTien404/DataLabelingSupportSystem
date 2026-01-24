@@ -38,10 +38,11 @@ namespace DAL.Repositories
         public async Task<List<Assignment>> GetAssignmentsForReviewerAsync(int projectId)
         {
             return await _context.Assignments
-                .Include(a => a.DataItem)   
-                .Include(a => a.Annotator)  
+                .Include(a => a.DataItem)
+                .Include(a => a.Project)
+                    .ThenInclude(p => p.LabelClasses)
+                .Include(a => a.Annotations)
                 .Where(a => a.ProjectId == projectId && a.Status == "Submitted")
-                .OrderBy(a => a.SubmittedAt)
                 .ToListAsync();
         }
 
@@ -65,20 +66,42 @@ namespace DAL.Repositories
 
         public async Task<AnnotatorStatsResponse> GetAnnotatorStatsAsync(string annotatorId)
         {
-            var stats = await _context.Assignments
+            var rawStats = await _context.Assignments
                 .Where(a => a.AnnotatorId == annotatorId)
-                .GroupBy(a => 1)
-                .Select(g => new AnnotatorStatsResponse
-                {
-                    TotalAssigned = g.Count(),
-                    Pending = g.Count(x => x.Status == "Assigned" || x.Status == "InProgress"),
-                    Submitted = g.Count(x => x.Status == "Submitted"),
-                    Rejected = g.Count(x => x.Status == "Rejected"),
-                    Completed = g.Count(x => x.Status == "Completed")
-                })
-                .FirstOrDefaultAsync();
+                .GroupBy(a => a.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
 
-            return stats ?? new AnnotatorStatsResponse();
+            var stats = new AnnotatorStatsResponse();
+
+            foreach (var item in rawStats)
+            {
+                string status = item.Status?.Trim() ?? "";
+                int count = item.Count;
+
+                stats.TotalAssigned += count;
+
+                if (string.Equals(status, "Submitted", StringComparison.OrdinalIgnoreCase))
+                {
+                    stats.Submitted += count;
+                }
+                else if (string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase))
+                {
+                    stats.Rejected += count;
+                }
+                else if (string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase))
+                {
+                    stats.Completed += count;
+                }
+                else
+                {
+                    stats.Pending += count;
+                }
+            }
+
+            return stats;
         }
     }
 }

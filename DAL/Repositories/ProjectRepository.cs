@@ -7,16 +7,16 @@ namespace DAL.Repositories
     public class ProjectRepository : Repository<Project>, IProjectRepository
     {
         public ProjectRepository(ApplicationDbContext context) : base(context) { }
-
         public async Task<Project?> GetProjectWithDetailsAsync(int id)
         {
             return await _context.Projects
                 .Include(p => p.Manager)
                 .Include(p => p.LabelClasses)
                 .Include(p => p.DataItems)
+                    .ThenInclude(d => d.Assignments)
+                        .ThenInclude(a => a.Annotator)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
-
         public async Task<Project?> GetProjectForExportAsync(int id)
         {
             return await _context.Projects
@@ -37,6 +37,9 @@ namespace DAL.Repositories
                  .Include(p => p.DataItems)
                     .ThenInclude(d => d.Assignments)
                         .ThenInclude(a => a.Annotations)
+                 .Include(p => p.DataItems)
+                    .ThenInclude(d => d.Assignments)
+                        .ThenInclude(a => a.ReviewLogs)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
@@ -44,6 +47,7 @@ namespace DAL.Repositories
         {
             return await _context.Projects
                 .Include(p => p.DataItems)
+                    .ThenInclude(d => d.Assignments) 
                 .Where(p => p.ManagerId == managerId)
                 .OrderByDescending(p => p.Id)
                 .ToListAsync();

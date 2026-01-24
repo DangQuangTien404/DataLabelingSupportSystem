@@ -55,9 +55,9 @@ namespace BLL.Services
             {
                 AssignmentId = assignment.Id,
                 ReviewerId = reviewerId,
-                Decision = request.IsApproved ? "Approve" : "Reject",
+                Verdict = request.IsApproved ? "Approved" : "Rejected",
                 Comment = request.Comment,
-                ErrorCategory = request.ErrorCategory,
+                ErrorCategory = request.IsApproved ? null : request.ErrorCategory,
                 CreatedAt = DateTime.UtcNow
             };
             await _reviewLogRepo.AddAsync(log);
@@ -103,6 +103,7 @@ namespace BLL.Services
                 StorageUrl = a.DataItem?.StorageUrl ?? "",
                 ProjectName = a.Project?.Name ?? "",
                 Status = a.Status,
+                Deadline = a.Project?.Deadline ?? DateTime.MinValue,
                 Labels = a.Project?.LabelClasses.Select(l => new LabelResponse
                 {
                     Id = l.Id,

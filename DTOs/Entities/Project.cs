@@ -26,12 +26,15 @@ namespace DTOs.Entities
         public decimal TotalBudget { get; set; }
 
         public DateTime Deadline { get; set; }
-
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public string AllowGeometryTypes { get; set; } = "Rectangle";
 
         public virtual ICollection<LabelClass> LabelClasses { get; set; } = new List<LabelClass>();
         public virtual ICollection<DataItem> DataItems { get; set; } = new List<DataItem>();
+
+        public virtual ICollection<UserProjectStat> UserProjectStats { get; set; } = new List<UserProjectStat>();
     }
 }
