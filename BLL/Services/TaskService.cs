@@ -1,5 +1,6 @@
 ﻿using BLL.Interfaces;
 using DAL.Interfaces;
+using DAL.Repositories;
 using DTOs.Entities;
 using DTOs.Requests;
 using DTOs.Responses;
@@ -139,7 +140,34 @@ namespace BLL.Services
         {
             return await _assignmentRepo.GetAnnotatorStatsAsync(annotatorId);
         }
-
+        public async Task SaveDraftAsync(string userId, SubmitAnnotationRequest request)
+        {
+            var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(request.AssignmentId);
+            if (assignment == null) throw new Exception("Task not found");
+            if (assignment.AnnotatorId != userId) throw new Exception("Unauthorized");
+            assignment.Status = "InProgress";
+            if (assignment.Annotations != null && assignment.Annotations.Any())
+            {
+                foreach (var oldAnno in assignment.Annotations)
+                {
+                    _annotationRepo.Delete(oldAnno);
+                }
+            }
+            if (request.Annotations != null)
+            {
+                foreach (var item in request.Annotations)
+                {
+                    await _annotationRepo.AddAsync(new Annotation
+                    {
+                        AssignmentId = assignment.Id,
+                        ClassId = item.LabelClassId,
+                        Value = item.ValueJson
+                    });
+                }
+            }
+            _assignmentRepo.Update(assignment);
+            await _assignmentRepo.SaveChangesAsync();
+        }
         public async Task SubmitTaskAsync(string annotatorId, SubmitAnnotationRequest request)
         {
             var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(request.AssignmentId);

@@ -86,6 +86,8 @@ namespace DTOs.Responses
         /// The list of members (annotators, reviewers) assigned to the project.
         /// </summary>
         public List<MemberResponse> Members { get; set; } = new List<MemberResponse>();
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 
     /// <summary>

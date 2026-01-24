@@ -36,6 +36,10 @@ namespace BLL.Services
             if (manager.Role != UserRoles.Manager && manager.Role != UserRoles.Admin)
                 throw new Exception("Only Manager or Admin can create projects.");
 
+            // 1. Map dữ liệu & Xử lý ngày tháng mặc định
+            var startDate = request.StartDate ?? DateTime.UtcNow;
+            var endDate = request.EndDate ?? DateTime.UtcNow.AddDays(30);
+
             var project = new Project
             {
                 ManagerId = managerId,
@@ -43,8 +47,14 @@ namespace BLL.Services
                 Description = request.Description,
                 PricePerLabel = request.PricePerLabel,
                 TotalBudget = request.TotalBudget,
-                Deadline = request.Deadline,
-                CreatedDate = DateTime.UtcNow
+
+                // Lưu ngày tháng vào DB
+                StartDate = startDate,
+                EndDate = endDate,
+                Deadline = endDate, // Thường Deadline trùng EndDate
+
+                CreatedDate = DateTime.UtcNow,
+                AllowGeometryTypes = request.AllowGeometryTypes ?? "Rectangle"
             };
 
             foreach (var label in request.LabelClasses)
@@ -60,6 +70,7 @@ namespace BLL.Services
             await _projectRepository.AddAsync(project);
             await _projectRepository.SaveChangesAsync();
 
+            // 2. Trả về Response
             return new ProjectDetailResponse
             {
                 Id = project.Id,
@@ -92,8 +103,11 @@ namespace BLL.Services
                 Name = p.Name,
                 Deadline = p.Deadline,
                 Status = p.Deadline < DateTime.UtcNow ? "Expired" : "Active",
-                TotalDataItems = 0,
-                Progress = 0
+                TotalDataItems = p.DataItems.Count,
+                // Tính % hoàn thành của dự án
+                Progress = p.DataItems.Count > 0
+                    ? (decimal)p.DataItems.Count(d => d.Status == "Done" || d.Status == "Completed") / p.DataItems.Count * 100
+                    : 0
             }).ToList();
         }
 
@@ -106,6 +120,7 @@ namespace BLL.Services
             {
                 project.DataItems.Add(new DataItem
                 {
+                    ProjectId = projectId, // Gán tường minh ID để tránh lỗi FK
                     StorageUrl = url,
                     Status = "New",
                     MetaData = "{}",
@@ -116,6 +131,7 @@ namespace BLL.Services
             _projectRepository.Update(project);
             await _projectRepository.SaveChangesAsync();
         }
+
         public async Task<ProjectDetailResponse?> GetProjectDetailsAsync(int projectId)
         {
             var project = await _projectRepository.GetProjectWithDetailsAsync(projectId);
@@ -124,6 +140,7 @@ namespace BLL.Services
             var allAssignments = project.DataItems.SelectMany(d => d.Assignments).ToList();
 
             int total = project.DataItems.Count;
+            // Đếm các item đã xong
             int done = project.DataItems.Count(d => d.Status == "Done" || d.Status == "Completed" || d.Status == "Approved");
             int progressPercent = (total > 0) ? (int)((double)done / total * 100) : 0;
 
@@ -167,6 +184,7 @@ namespace BLL.Services
                 Members = members
             };
         }
+
         public async Task<List<ProjectSummaryResponse>> GetProjectsByManagerAsync(string managerId)
         {
             var projects = await _projectRepository.GetProjectsByManagerIdAsync(managerId);
@@ -179,8 +197,8 @@ namespace BLL.Services
                 TotalDataItems = p.DataItems.Count,
                 Status = DateTime.UtcNow > p.Deadline ? "Expired" : "Active",
                 Progress = p.DataItems.Count > 0
-                           ? (decimal)p.DataItems.Count(d => d.Status == "Done") / p.DataItems.Count * 100
-                           : 0,
+                            ? (decimal)p.DataItems.Count(d => d.Status == "Done" || d.Status == "Completed") / p.DataItems.Count * 100
+                            : 0,
                 TotalMembers = p.DataItems
                                 .SelectMany(d => d.Assignments)
                                 .Select(a => a.AnnotatorId)
@@ -188,18 +206,22 @@ namespace BLL.Services
                                 .Count()
             }).ToList();
         }
+
         public async Task UpdateProjectAsync(int projectId, UpdateProjectRequest request)
         {
             var project = await _projectRepository.GetByIdAsync(projectId);
             if (project == null) throw new Exception("Project not found");
 
             project.Name = request.Name;
-
             if (!string.IsNullOrEmpty(request.Description)) project.Description = request.Description;
 
             project.PricePerLabel = request.PricePerLabel;
             project.TotalBudget = request.TotalBudget;
             project.Deadline = request.Deadline;
+
+            // Cập nhật ngày tháng nếu có
+            if (request.StartDate.HasValue) project.StartDate = request.StartDate.Value;
+            if (request.EndDate.HasValue) project.EndDate = request.EndDate.Value;
 
             _projectRepository.Update(project);
             await _projectRepository.SaveChangesAsync();
@@ -218,6 +240,7 @@ namespace BLL.Services
         {
             var project = await _projectRepository.GetByIdAsync(projectId);
             if (project == null) throw new Exception("Project not found");
+
             var allStats = await _statsRepo.GetAllAsync();
             var projectStats = allStats.Where(s => s.ProjectId == projectId).ToList();
 
@@ -232,8 +255,8 @@ namespace BLL.Services
                         TotalLabels = stat.TotalApproved,
                         UnitPrice = project.PricePerLabel,
                         TotalAmount = stat.EstimatedEarnings,
-                        StartDate = DateTime.UtcNow.AddMonths(-1),
-                        EndDate = DateTime.UtcNow,
+                        StartDate = project.StartDate ?? DateTime.UtcNow.AddMonths(-1),
+                        EndDate = project.EndDate ?? DateTime.UtcNow,
                         Status = "Pending",
                         CreatedDate = DateTime.UtcNow
                     };
@@ -242,30 +265,35 @@ namespace BLL.Services
             }
             await _invoiceRepo.SaveChangesAsync();
         }
+
         public async Task<byte[]> ExportProjectDataAsync(int projectId, string userId)
         {
+            // Sử dụng Repo chuyên dụng để lấy kèm Annotation
             var project = await _projectRepository.GetProjectForExportAsync(projectId);
             if (project == null) throw new Exception("Project not found");
 
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) throw new Exception("User not found");
 
+            // Chỉ Admin hoặc Manager của dự án mới được export
             if (user.Role != UserRoles.Admin && project.ManagerId != userId)
                 throw new Exception("Unauthorized to export this project.");
 
             var dataItems = project.DataItems
-                .Where(d => d.Status == "Done")
+                .Where(d => d.Status == "Done" || d.Status == "Completed" || d.Status == "Approved")
                 .Select(d => new
                 {
                     DataItemId = d.Id,
                     StorageUrl = d.StorageUrl,
+                    // Lấy các assignment đã hoàn thành và lấy annotations bên trong
                     Annotations = d.Assignments
-                        .Where(a => a.Status == "Completed")
+                        .Where(a => a.Status == "Completed" || a.Status == "Submitted") // Lấy cả Submitted nếu cần
                         .SelectMany(a => a.Annotations)
                         .Select(an => new
                         {
                             ClassId = an.ClassId,
-                            ClassName = project.LabelClasses.FirstOrDefault(l => l.Id == an.ClassId)?.Name,
+                            ClassName = project.LabelClasses.FirstOrDefault(l => l.Id == an.ClassId)?.Name ?? "Unknown",
+                            // Parse JSON string thành Object để output đẹp
                             Value = JsonDocument.Parse(an.Value).RootElement
                         })
                         .ToList()
@@ -294,16 +322,19 @@ namespace BLL.Services
 
             var allAssignments = project.DataItems.SelectMany(d => d.Assignments).ToList();
 
+            // Tính toán lỗi & Rejection Rate
             var allReviewLogs = allAssignments.SelectMany(a => a.ReviewLogs).ToList();
-            var totalReviewed = allReviewLogs.Count;
-            var totalRejectedLogs = allReviewLogs.Count(l => l.Decision == "Reject");
+            var totalReviewed = allReviewLogs.Count; // Tổng số lượt đã review
+
+            // Đếm số lượt bị Reject (Dựa vào Verdict hoặc Decision)
+            var totalRejectedLogs = allReviewLogs.Count(l => l.Verdict == "Rejected" || l.Verdict == "Reject");
 
             var stats = new ProjectStatisticsResponse
             {
                 ProjectId = project.Id,
                 ProjectName = project.Name,
                 TotalItems = project.DataItems.Count,
-                CompletedItems = project.DataItems.Count(d => d.Status == "Done"),
+                CompletedItems = project.DataItems.Count(d => d.Status == "Done" || d.Status == "Completed"),
 
                 TotalAssignments = allAssignments.Count,
                 PendingAssignments = allAssignments.Count(a => a.Status == "Assigned" || a.Status == "InProgress"),
@@ -311,9 +342,14 @@ namespace BLL.Services
                 ApprovedAssignments = allAssignments.Count(a => a.Status == "Completed"),
                 RejectedAssignments = allAssignments.Count(a => a.Status == "Rejected"),
 
-                RejectionRate = totalReviewed > 0 ? Math.Round((double)totalRejectedLogs / totalReviewed * 100, 2) : 0,
+                // Công thức: (Số lần reject / Tổng lần review) * 100
+                RejectionRate = totalReviewed > 0
+                    ? Math.Round((double)totalRejectedLogs / totalReviewed * 100, 2)
+                    : 0,
+
+                // Thống kê loại lỗi (Error Breakdown)
                 ErrorBreakdown = allReviewLogs
-                    .Where(l => l.Decision == "Reject" && !string.IsNullOrEmpty(l.ErrorCategory) && ErrorCategories.IsValid(l.ErrorCategory))
+                    .Where(l => (l.Verdict == "Rejected" || l.Verdict == "Reject") && !string.IsNullOrEmpty(l.ErrorCategory))
                     .GroupBy(l => l.ErrorCategory!)
                     .ToDictionary(g => g.Key, g => g.Count())
             };
@@ -323,12 +359,11 @@ namespace BLL.Services
                 stats.ProgressPercentage = Math.Round((decimal)stats.CompletedItems / stats.TotalItems * 100, 2);
             }
 
+            // Thống kê năng suất từng nhân viên
             stats.AnnotatorPerformances = allAssignments
                 .GroupBy(a => a.AnnotatorId)
                 .Select(g =>
                 {
-                    var userMoneyStat = moneyStats.FirstOrDefault(m => m.UserId == g.Key);
-
                     return new AnnotatorPerformance
                     {
                         AnnotatorId = g.Key,
@@ -336,10 +371,11 @@ namespace BLL.Services
                         TasksAssigned = g.Count(),
                         TasksCompleted = g.Count(a => a.Status == "Completed"),
                         TasksRejected = g.Count(a => a.Status == "Rejected"),
-                        AverageDurationSeconds = 0
+                        AverageDurationSeconds = 0 // Cần logic tính thời gian nếu có
                     };
                 }).ToList();
 
+            // Thống kê phân bố nhãn (Label Distribution)
             var allAnnotations = allAssignments.SelectMany(a => a.Annotations).ToList();
             var labelCounts = allAnnotations
                 .GroupBy(an => an.ClassId)
@@ -357,7 +393,8 @@ namespace BLL.Services
         public async Task<ManagerStatsResponse> GetManagerStatsAsync(string managerId)
         {
             var projects = await _projectRepository.GetProjectsByManagerIdAsync(managerId);
-            var stats = new ManagerStatsResponse
+
+            return new ManagerStatsResponse
             {
                 TotalProjects = projects.Count,
                 ActiveProjects = projects.Count(p => p.Deadline >= DateTime.UtcNow),
@@ -369,8 +406,6 @@ namespace BLL.Services
                                        .Distinct()
                                        .Count()
             };
-
-            return stats;
         }
     }
 }

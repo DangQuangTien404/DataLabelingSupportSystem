@@ -1,4 +1,4 @@
-using BLL.Interfaces;
+﻿using BLL.Interfaces;
 using DTOs.Constants;
 using DTOs.Requests;
 using DTOs.Responses;
@@ -118,6 +118,20 @@ namespace API.Controllers
             catch (Exception ex) { return BadRequest(new { Message = ex.Message }); }
         }
 
+        [HttpPost("save-draft")]
+        public async Task<IActionResult> SaveDraft([FromBody] SubmitAnnotationRequest request)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            try
+            {
+                await _taskService.SaveDraftAsync(userId, request);
+                return Ok(new { Message = "Draft saved successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
         /// <summary>
         /// Submits annotations for a task.
         /// </summary>

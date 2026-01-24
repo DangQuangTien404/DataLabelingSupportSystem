@@ -19,7 +19,7 @@ namespace DTOs.Entities
         public string Decision { get; set; } = string.Empty;
         public string? Comment { get; set; }
         public string? ErrorCategory { get; set; }
-
+        public string Verdict { get; set; } = "Rejected";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -11,5 +11,6 @@ namespace BLL.Interfaces
 
         Task SubmitTaskAsync(string annotatorId, SubmitAnnotationRequest request);
         Task<AnnotatorStatsResponse> GetAnnotatorStatsAsync(string annotatorId);
+        Task SaveDraftAsync(string userId, SubmitAnnotationRequest request);
     }
 }

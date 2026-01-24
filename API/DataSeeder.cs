@@ -111,6 +111,10 @@ namespace API
 
                             var assignment = new Assignment
                             {
+                                // --- FIX LỖI Ở ĐÂY: Gán Project và DataItem tường minh ---
+                                Project = project,   // Quan trọng! Để ProjectId không bị 0
+                                DataItem = item,     // Gán luôn cho chắc
+
                                 AnnotatorId = assignedStaff.Id,
                                 Status = status,
                                 AssignedDate = DateTime.UtcNow,
@@ -130,7 +134,7 @@ namespace API
                                 };
                             }
 
-                            // Nếu trạng thái là Rejected -> Tạo ReviewLog (ĐÃ SỬA: Xóa Verdict)
+                            // Nếu trạng thái là Rejected -> Tạo ReviewLog
                             if (status == "Rejected")
                             {
                                 assignment.ReviewLogs = new List<ReviewLog>
@@ -144,7 +148,10 @@ namespace API
                                 };
                             }
 
-                            item.Assignments = new List<Assignment> { assignment };
+                            // Add vào list của item
+                            if (item.Assignments == null) item.Assignments = new List<Assignment>();
+                            item.Assignments.Add(assignment);
+
                             staffIndex++;
                         }
 

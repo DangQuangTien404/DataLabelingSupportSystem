@@ -48,6 +48,8 @@ namespace DTOs.Requests
         /// A list of initial label classes for the project.
         /// </summary>
         public List<LabelRequest> LabelClasses { get; set; } = new List<LabelRequest>();
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 
     /// <summary>
@@ -84,6 +86,8 @@ namespace DTOs.Requests
         /// </summary>
         /// <example>2024-06-30T23:59:59</example>
         public DateTime Deadline { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 
     /// <summary>
