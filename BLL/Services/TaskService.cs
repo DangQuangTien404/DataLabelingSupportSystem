@@ -1,9 +1,9 @@
 ﻿using BLL.Interfaces;
+using Core.DTOs.Requests;
+using Core.DTOs.Responses;
 using DAL.Interfaces;
 using DTOs.Constants;
 using DTOs.Entities;
-using DTOs.Requests;
-using DTOs.Responses;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 

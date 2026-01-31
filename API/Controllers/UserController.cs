@@ -1,5 +1,5 @@
 using BLL.Interfaces;
-using DTOs.Requests;
+using Core.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

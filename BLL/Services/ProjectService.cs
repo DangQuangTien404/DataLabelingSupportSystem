@@ -2,10 +2,10 @@
 using DAL.Interfaces;
 using DTOs.Constants;
 using DTOs.Entities;
-using DTOs.Requests;
-using DTOs.Responses;
 using System.Text.Json;
 using System.Text;
+using Core.DTOs.Requests;
+using Core.DTOs.Responses;
 
 namespace BLL.Services
 {

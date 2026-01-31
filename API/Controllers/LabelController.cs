@@ -1,6 +1,6 @@
 using BLL.Interfaces;
-using DTOs.Requests;
-using DTOs.Responses;
+using Core.DTOs.Requests;
+using Core.DTOs.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

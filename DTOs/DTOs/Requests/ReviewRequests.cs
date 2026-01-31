@@ -1,4 +1,4 @@
-namespace DTOs.Requests
+namespace Core.DTOs.Requests
 {
     /// <summary>
     /// Request model for submitting a review of an assignment.

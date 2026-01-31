@@ -1,5 +1,5 @@
+using Core.DTOs.Responses;
 using DTOs.Entities;
-using DTOs.Responses;
 
 namespace DAL.Interfaces
 {

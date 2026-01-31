@@ -1,4 +1,4 @@
-﻿namespace DTOs.Responses
+﻿namespace Core.DTOs.Responses
 {
     public class AnnotatorProjectStatsResponse
     {

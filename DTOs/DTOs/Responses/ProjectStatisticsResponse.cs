@@ -1,4 +1,4 @@
-namespace DTOs.Responses
+namespace Core.DTOs.Responses
 {
     /// <summary>
     /// Response model containing statistics for a specific project.

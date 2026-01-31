@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DTOs.Requests
+namespace Core.DTOs.Requests
 {
     /// <summary>
     /// Request model for creating a new project.

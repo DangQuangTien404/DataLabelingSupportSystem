@@ -1,5 +1,5 @@
-﻿using DTOs.Entities;
-using DTOs.Requests;
+﻿using Core.DTOs.Requests;
+using DTOs.Entities;
 
 namespace BLL.Interfaces
 {

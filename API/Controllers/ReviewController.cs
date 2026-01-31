@@ -1,7 +1,7 @@
 using BLL.Interfaces;
+using Core.DTOs.Requests;
+using Core.DTOs.Responses;
 using DTOs.Constants;
-using DTOs.Requests;
-using DTOs.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

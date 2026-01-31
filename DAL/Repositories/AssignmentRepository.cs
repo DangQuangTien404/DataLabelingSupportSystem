@@ -1,6 +1,6 @@
-﻿using DAL.Interfaces;
+﻿using Core.DTOs.Responses;
+using DAL.Interfaces;
 using DTOs.Entities;
-using DTOs.Responses;
 using Microsoft.EntityFrameworkCore;
 
 namespace DAL.Repositories

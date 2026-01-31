@@ -1,8 +1,8 @@
 ﻿using BLL.Interfaces;
+using Core.DTOs.Requests;
+using Core.DTOs.Responses;
 using DAL.Interfaces;
 using DTOs.Entities;
-using DTOs.Requests;
-using DTOs.Responses;
 
 namespace BLL.Services
 {
