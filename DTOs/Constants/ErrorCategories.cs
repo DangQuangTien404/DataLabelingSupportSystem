@@ -1,4 +1,4 @@
-﻿namespace DTOs.Constants
+namespace DTOs.Constants
 {
     public static class ErrorCategories
     {
@@ -24,8 +24,22 @@
             PR01_ProcessError, Other
         };
 
-        public static bool IsValid(string category) => All.Contains(category);
+        /// <summary>
+/// Determines whether the specified error category is one of the defined categories.
+/// </summary>
+/// <param name="category">The error category to check.</param>
+/// <returns>`true` if the category is included in the predefined list, `false` otherwise.</returns>
+public static bool IsValid(string category) => All.Contains(category);
 
+        /// <summary>
+        /// Determine the severity weight for a given error category.
+        /// </summary>
+        /// <param name="category">An error category identifier (e.g., "LU-01: ...", "TE-02: ...").</param>
+        /// <returns>
+        /// `10` for categories beginning with "LU-01", "ME-01", "TE-01", or "PR-01";
+        /// `5` for categories beginning with "TE-02", "TE-03", "TE-04", or "LU-02";
+        /// `2` for all other categories.
+        /// </returns>
         public static int GetSeverityWeight(string category)
         {
             if (category.StartsWith("LU-01") || category.StartsWith("ME-01") ||

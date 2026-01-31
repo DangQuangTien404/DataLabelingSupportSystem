@@ -1,4 +1,4 @@
-﻿using DAL;
+using DAL;
 using DTOs.Constants;
 using DTOs.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +7,12 @@ namespace API
 {
     public static class DataSeeder
     {
+        /// <summary>
+        /// Seeds initial users, a sample project (with label classes), data items, assignments, review logs, and basic user/project statistics into the application's database.
+        /// </summary>
+        /// <remarks>
+        /// The method creates default accounts (Admin, Manager, Reviewer, multiple Annotators), a vehicle-detection sample project with label guidelines, ten data items, a set of assignments with simulated statuses and review logs, and per-user/project KPI entries. It performs presence checks to avoid duplicating existing users or projects so it can be run safely on application startup.
+        /// </remarks>
         public static async Task SeedData(IServiceProvider serviceProvider)
         {
             using (var scope = serviceProvider.CreateScope())

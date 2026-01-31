@@ -1,4 +1,4 @@
-﻿using BLL.Interfaces;
+using BLL.Interfaces;
 using DAL.Interfaces;
 using DTOs.Constants;
 using DTOs.Entities;
@@ -17,6 +17,9 @@ namespace BLL.Services
         private readonly IRepository<Invoice> _invoiceRepo;
         private readonly IAssignmentRepository _assignmentRepo;
 
+        /// <summary>
+        /// Initializes a new ProjectService with required repository dependencies.
+        /// </summary>
         public ProjectService(
             IProjectRepository projectRepository,
             IUserRepository userRepository,
@@ -31,6 +34,14 @@ namespace BLL.Services
             _assignmentRepo = assignmentRepo;
         }
 
+        /// <summary>
+        /// Creates a new project owned by the specified manager and returns the created project's details.
+        /// </summary>
+        /// <param name="managerId">Identifier of the user who will be the project's manager.</param>
+        /// <param name="request">Request payload containing the project's configuration (name, dates, budget, price, labels, and allowed geometry types).</param>
+        /// <returns>A <see cref="ProjectDetailResponse"/> containing the created project's metadata, manager information, label list, and initial data item counts.</returns>
+        /// <exception cref="System.Exception">Thrown if the manager user is not found.</exception>
+        /// <exception cref="System.Exception">Thrown if the user is not in the Manager or Admin role.</exception>
         public async Task<ProjectDetailResponse> CreateProjectAsync(string managerId, CreateProjectRequest request)
         {
             var manager = await _userRepository.GetByIdAsync(managerId);
@@ -150,6 +161,12 @@ namespace BLL.Services
             await _projectRepository.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Builds a detailed view of a project including metadata, label definitions, aggregate item counts, progress percentage, and per-member task statistics.
+        /// </summary>
+        /// <returns>
+        /// A ProjectDetailResponse containing project metadata, labels, total and processed item counts, overall progress, and member statistics; <c>null</c> if the project does not exist.
+        /// </returns>
         public async Task<ProjectDetailResponse?> GetProjectDetailsAsync(int projectId)
         {
             var project = await _projectRepository.GetProjectWithDetailsAsync(projectId);
@@ -326,6 +343,12 @@ namespace BLL.Services
             var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
             return Encoding.UTF8.GetBytes(json);
         }
+        /// <summary>
+        /// Produces aggregated statistics and performance metrics for the specified project.
+        /// </summary>
+        /// <param name="projectId">The identifier of the project to compute statistics for.</param>
+        /// <returns>A <see cref="ProjectStatisticsResponse"/> containing totals (items, assignments), completion and progress metrics, rejection rate, error breakdown, per-annotator performance, and label distribution.</returns>
+        /// <exception cref="Exception">Thrown when a project with the given <paramref name="projectId"/> does not exist.</exception>
         public async Task<ProjectStatisticsResponse> GetProjectStatisticsAsync(int projectId)
         {
             var project = await _projectRepository.GetProjectWithStatsDataAsync(projectId);

@@ -1,4 +1,4 @@
-﻿using BLL.Interfaces;
+using BLL.Interfaces;
 using Core.DTOs.Requests;
 using Core.DTOs.Responses;
 using DAL.Interfaces;
@@ -16,6 +16,9 @@ namespace BLL.Services
         private readonly IRepository<UserProjectStat> _statsRepo;
         private readonly IRepository<Project> _projectRepo;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ReviewService"/> with the required repositories.
+        /// </summary>
         public ReviewService(
             IAssignmentRepository assignmentRepo,
             IRepository<ReviewLog> reviewLogRepo,
@@ -30,6 +33,14 @@ namespace BLL.Services
             _projectRepo = projectRepo;
         }
 
+        /// <summary>
+        /// Process a review for a submitted assignment and update the assignment, related data item, reviewer/annotator statistics, and create a review log entry.
+        /// </summary>
+        /// <param name="reviewerId">Identifier of the reviewer performing the review.</param>
+        /// <param name="request">Review details (must include AssignmentId, IsApproved, Comment, and optional ErrorCategory).</param>
+        /// <exception cref="Exception">Thrown with message "Assignment not found" if the assignment does not exist.</exception>
+        /// <exception cref="Exception">Thrown with message "This task is not ready for review." if the assignment is not in the "Submitted" status.</exception>
+        /// <exception cref="Exception">Thrown with message "Project info not found" if the related project cannot be found.</exception>
         public async Task ReviewAssignmentAsync(string reviewerId, ReviewRequest request)
         {
             var assignment = await _assignmentRepo.GetByIdAsync(request.AssignmentId);
@@ -126,6 +137,14 @@ namespace BLL.Services
 
             await _assignmentRepo.SaveChangesAsync();
         }
+        /// <summary>
+        /// Audits an existing review log and updates the reviewer's project-specific quality metrics accordingly.
+        /// </summary>
+        /// <param name="managerId">Identifier of the manager performing the audit.</param>
+        /// <param name="request">Audit request containing the review log identifier and whether the manager considers the original decision correct. Uses `ReviewLogId` to locate the log and `IsCorrectDecision` to record the audit result.</param>
+        /// <exception cref="System.Exception">Thrown when the review log cannot be found.</exception>
+        /// <exception cref="System.Exception">Thrown when the review log has already been audited.</exception>
+        /// <exception cref="System.Exception">Thrown when the assignment related to the review log cannot be found.</exception>
         public async Task AuditReviewAsync(string managerId, AuditReviewRequest request)
         {
             var log = await _reviewLogRepo.GetByIdAsync(request.ReviewLogId);
@@ -172,6 +191,11 @@ namespace BLL.Services
             _statsRepo.Update(reviewerStats);
             await _statsRepo.SaveChangesAsync();
         }
+        /// <summary>
+        /// Gets the list of tasks available for review for a given project.
+        /// </summary>
+        /// <param name="projectId">The project identifier to retrieve review tasks for.</param>
+        /// <returns>A list of TaskResponse objects representing assignments and related data for review. Fields use safe defaults: missing storage URLs or project names are returned as empty strings, missing deadlines as DateTime.MinValue, missing label collections as an empty list, and only non-null parsed annotations are included.</returns>
         public async Task<List<TaskResponse>> GetTasksForReviewAsync(int projectId)
         {
             var assignments = await _assignmentRepo.GetAssignmentsForReviewerAsync(projectId);

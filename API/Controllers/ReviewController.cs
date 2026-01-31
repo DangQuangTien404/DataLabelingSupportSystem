@@ -26,6 +26,18 @@ namespace API.Controllers
         /// <returns>A message indicating whether the task was Approved or Rejected.</returns>
         /// <response code="200">Review submitted successfully.</response>
         /// <response code="400">If the review submission fails (e.g., task not found).</response>
+        /// <summary>
+        /// Submits a review decision for an assignment on behalf of the current user.
+        /// </summary>
+        /// <param name="request">The review details, including the target assignment and the approval decision.</param>
+        /// <returns>
+        /// An IActionResult indicating the outcome:
+        /// 200 with a message "Approved" or "Rejected" on success;
+        /// 400 with an error message if processing fails;
+        /// 401 if the caller is not authenticated.
+        /// </returns>
+        /// <response code="200">Review processed successfully; response contains a message "Approved" or "Rejected".</response>
+        /// <response code="400">Request failed to process; response contains the error message.</response>
         /// <response code="401">If the user is not authenticated.</response>
         [HttpPost("submit")]
         [Authorize(Roles = "Reviewer,Manager,Admin")]
@@ -54,6 +66,13 @@ namespace API.Controllers
         /// <returns>A success message confirming the audit was recorded.</returns>
         /// <response code="200">Audit submitted successfully.</response>
         /// <response code="400">If the audit fails (e.g., review log not found or already audited).</response>
+        /// <summary>
+        /// Submits an audit for a review on behalf of the current manager.
+        /// </summary>
+        /// <param name="request">The audit details to submit.</param>
+        /// <returns>An IActionResult containing a success message on 200 OK, an error message on 400 Bad Request, or 401 Unauthorized if the caller identity is missing.</returns>
+        /// <response code="200">Audit submitted successfully.</response>
+        /// <response code="400">If the audit could not be processed; returns an error message.</response>
         /// <response code="401">If the user is not authorized (must be Manager or Admin).</response>
         [HttpPost("audit")]
         [Authorize(Roles = "Manager,Admin")]
@@ -81,6 +100,12 @@ namespace API.Controllers
         /// <param name="projectId">The unique identifier of the project.</param>
         /// <returns>A list of tasks awaiting review.</returns>
         /// <response code="200">Returns list of tasks.</response>
+        /// <summary>
+        /// Retrieves tasks pending review for the specified project.
+        /// </summary>
+        /// <param name="projectId">The project identifier to fetch review tasks for.</param>
+        /// <returns>An enumerable of TaskResponse representing tasks available for review.</returns>
+        /// <response code="200">A collection of tasks for review.</response>
         /// <response code="400">If retrieval fails.</response>
         [HttpGet("project/{projectId}")]
         [Authorize(Roles = "Reviewer,Manager,Admin")]
@@ -103,6 +128,10 @@ namespace API.Controllers
         /// Gets the list of available error categories (e.g., TE-01, LU-01).
         /// </summary>
         /// <returns>A list of error codes and descriptions.</returns>
+        /// <summary>
+        /// Retrieves all configured error category names.
+        /// </summary>
+        /// <returns>An enumerable of all error category names.</returns>
         /// <response code="200">Returns list of error categories.</response>
         [HttpGet("error-categories")]
         [ProducesResponseType(typeof(IEnumerable<string>), 200)]
